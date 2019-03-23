@@ -1,114 +1,126 @@
-import { Schema as NormalizrSchema } from 'normalizr'
-import Schema from '../../schema/Schema'
-import { Record, Records, NormalizedData, Collection } from '../../data'
-import Model from '../../model/Model'
-import Query from '../../query/Query'
-import Constraint from '../../query/contracts/RelationshipConstraint'
-import Attribute from '../Attribute'
+import { Schema as NormalizrSchema } from "normalizr";
+import Schema from "../../schema/Schema";
+import { Record, Records, NormalizedData, Collection } from "../../data";
+import Model from "../../model/Model";
+import Query from "../../query/Query";
+import Constraint from "../../query/contracts/RelationshipConstraint";
+import Attribute from "../Attribute";
 
 export default abstract class Relation extends Attribute {
   /**
    * Define the normalizr schema for the relationship.
    */
-  abstract define (schema: Schema): NormalizrSchema
+  abstract define(schema: Schema): NormalizrSchema;
 
   /**
    * Attach the relational key to the given data. Basically, this method
    * should attach any missing foreign keys to the normalized data.
    */
-  abstract attach (key: any, record: Record, data: NormalizedData): void
+  abstract attach(key: any, record: Record, data: NormalizedData): void;
 
   /**
    * Load relationship records.
    */
-  abstract load (query: Query, collection: Collection, name: string, constraints: Constraint[]): void
+  abstract load(query: Query, collection: Collection, name: string, constraints: Constraint[]): void;
 
   /**
    * Get relation query instance with constraint attached.
    */
-  protected getRelation (query: Query, name: string, constraints: Constraint[]): Query {
-    const relation = query.newQuery(name)
+  protected getRelation(query: Query, name: string, constraints: Constraint[]): Query {
+    const relation = query.newQuery(name);
 
-    constraints.forEach(constraint => { constraint(relation) })
+    constraints.forEach(constraint => {
+      constraint(relation);
+    });
 
-    return relation
+    return relation;
   }
 
   /**
    * Get specified keys from the given collection.
    */
-  protected getKeys (collection: Collection, key: string): string[] {
-    return collection.map(model => model[key])
+  protected getKeys(collection: Collection, key: string): string[] {
+    return collection.map(model => model[key]);
   }
 
   /**
    * Create a new indexed map for the single relation by specified key.
    */
-  mapSingleRelations (collection: Record[], key: string): Records {
-    return collection.reduce((records, record) => {
-      const id = record[key]
+  mapSingleRelations(collection: Record[], key: string): Records {
+    return collection.reduce(
+      (records, record) => {
+        const id = record[key];
 
-      records[id] = record
+        records[id] = record;
 
-      return records
-    }, {} as Records)
+        return records;
+      },
+      {} as Records
+    );
   }
 
   /**
    * Create a new indexed map for the many relation by specified key.
    */
-  mapManyRelations (collection: Record[], key: string): Records {
-    return collection.reduce((records, record) => {
-      const id = record[key]
+  mapManyRelations(collection: Record[], key: string): Records {
+    return collection.reduce(
+      (records, record) => {
+        const id = record[key];
 
-      if (!records[id]) {
-        records[id] = []
-      }
+        if (!records[id]) {
+          records[id] = [];
+        }
 
-      records[id].push(record)
+        records[id].push(record);
 
-      return records
-    }, {} as Records)
+        return records;
+      },
+      {} as Records
+    );
   }
 
   /**
    * Check if the given value is a single relation, which is the Object.
    */
-  isOneRelation (record: any): boolean {
-    if (!Array.isArray(record) && record !== null && typeof record === 'object') {
-      return true
+  isOneRelation(record: any): boolean {
+    if (typeof record == "number") return true;
+    if (!Array.isArray(record) && record !== null && typeof record === "object") {
+      return true;
     }
 
-    return false
+    return false;
   }
 
   /**
    * Check if the given value is a single relation, which is the Object.
    */
-  isManyRelation (records: any): boolean {
+  isManyRelation(records: any): boolean {
     if (!Array.isArray(records)) {
-      return false
+      return false;
     }
 
     if (records.length < 1) {
-      return false
+      return false;
     }
 
-    return true
+    return true;
   }
 
   /**
    * Convert given records to the collection.
    */
-  makeManyRelation (records: any, model: typeof Model): Collection {
+  makeManyRelation(records: any, model: typeof Model): Collection {
     if (!this.isManyRelation(records)) {
-      return []
+      return [];
     }
 
-    return records.filter((record: any) => {
-      return this.isOneRelation(record)
-    }).map((record: Record) => {
-      return new model(record)
-    })
+    return records
+      .filter((record: any) => {
+        return this.isOneRelation(record);
+      })
+      .map((record: Record) => {
+        if (typeof record == "number") return model.find(record);
+        return new model(record);
+      });
   }
 }

@@ -64,8 +64,7 @@ export default class BelongsTo extends Relation {
     if (!this.isOneRelation(value)) {
       return null
     }
-
-    return new this.parent(value)
+    return typeof value === "number" ? this.parent.find(value) : new this.parent(value);
   }
 
   /**

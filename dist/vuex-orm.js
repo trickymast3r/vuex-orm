@@ -505,7 +505,9 @@
          */
         Relation.prototype.getRelation = function (query, name, constraints) {
             var relation = query.newQuery(name);
-            constraints.forEach(function (constraint) { constraint(relation); });
+            constraints.forEach(function (constraint) {
+                constraint(relation);
+            });
             return relation;
         };
         /**
@@ -541,7 +543,9 @@
          * Check if the given value is a single relation, which is the Object.
          */
         Relation.prototype.isOneRelation = function (record) {
-            if (!Array.isArray(record) && record !== null && typeof record === 'object') {
+            if (typeof record == "number")
+                return true;
+            if (!Array.isArray(record) && record !== null && typeof record === "object") {
                 return true;
             }
             return false;
@@ -566,9 +570,13 @@
             if (!this.isManyRelation(records)) {
                 return [];
             }
-            return records.filter(function (record) {
+            return records
+                .filter(function (record) {
                 return _this.isOneRelation(record);
-            }).map(function (record) {
+            })
+                .map(function (record) {
+                if (typeof record == "number")
+                    return model.find(record);
                 return new model(record);
             });
         };
@@ -581,7 +589,7 @@
          * Create a new has one instance.
          */
         function HasOne(model, related, foreignKey, localKey) {
-            var _this = _super.call(this, model) /* istanbul ignore next */ || this;
+            var _this = _super.call(this, model) || this;
             _this.related = _this.model.relation(related);
             _this.foreignKey = foreignKey;
             _this.localKey = localKey;
@@ -629,7 +637,7 @@
             if (!this.isOneRelation(value)) {
                 return null;
             }
-            return new this.related(value);
+            return typeof value === "number" ? this.related.find(value) : new this.related(value);
         };
         /**
          * Load the has one relationship for the collection.
@@ -710,7 +718,7 @@
             if (!this.isOneRelation(value)) {
                 return null;
             }
-            return new this.parent(value);
+            return typeof value === "number" ? this.parent.find(value) : new this.parent(value);
         };
         /**
          * Load the belongs to relationship for the collection.
@@ -1109,7 +1117,7 @@
          * Create a new morph to instance.
          */
         function MorphTo(model, id, type) {
-            var _this = _super.call(this, model) /* istanbul ignore next */ || this;
+            var _this = _super.call(this, model) || this;
             _this.id = id;
             _this.type = type;
             return _this;
@@ -1137,7 +1145,7 @@
             }
             var related = parent[this.type];
             var model = this.model.relation(related);
-            return model ? new model(value) : null;
+            return model ? (typeof value === "number" ? model.find(value) : new model(value)) : null;
         };
         /**
          * Load the morph to relationship for the collection.
@@ -1147,7 +1155,7 @@
             var types = this.getTypes(collection);
             var relateds = types.reduce(function (relateds, type) {
                 var relatedQuery = _this.getRelation(query, type, constraints);
-                relateds[type] = _this.mapSingleRelations(relatedQuery.get(), '$id');
+                relateds[type] = _this.mapSingleRelations(relatedQuery.get(), "$id");
                 return relateds;
             }, {});
             collection.forEach(function (item) {
@@ -1177,7 +1185,7 @@
          * Create a new belongs to instance.
          */
         function MorphOne(model, related, id, type, localKey) {
-            var _this = _super.call(this, model) /* istanbul ignore next */ || this;
+            var _this = _super.call(this, model) || this;
             _this.related = _this.model.relation(related);
             _this.id = id;
             _this.type = type;
@@ -1208,7 +1216,7 @@
             if (!this.isOneRelation(value)) {
                 return null;
             }
-            return new this.related(value);
+            return typeof value === "number" ? this.related.find(value) : new this.related(value);
         };
         /**
          * Load the morph many relationship for the record.
